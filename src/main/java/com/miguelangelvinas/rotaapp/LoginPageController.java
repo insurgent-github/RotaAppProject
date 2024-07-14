@@ -15,9 +15,7 @@ import java.sql.*;
 import java.util.Objects;
 import javafx.scene.control.Button;
 
-
-public class LoginPageController
-{
+public class LoginPageController {
 
     @FXML
     private Button button_login;
@@ -32,88 +30,75 @@ public class LoginPageController
     @FXML
     private TextField textField_username;
 
-
-    public void buttonLoginOnAction (ActionEvent event)
-    {
-
-        if (textField_username.getText().isBlank() == false && textField_password.getText().isBlank() == false)
-        {
+    @FXML
+    public void buttonLoginOnAction(ActionEvent event) {
+        if (!textField_username.getText().isBlank() && !textField_password.getText().isBlank()) {
             validateLogin(event);
-        }
-        else
-        {
+        } else {
             loginMessageLabel.setText("Please enter your credentials");
         }
     }
 
-    private void validateLogin(ActionEvent event)
-    {
-        try
-        {
-            //We are establishing the database connection here.
+    private void validateLogin(ActionEvent event) {
+        try {
             Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/database", "root", "Filosofia1!");
 
-            //And we are going to define the SQL Query to SELECT the user based on the USERNAME and the PASSWORD.
             String sql = "SELECT * FROM users WHERE email = ? AND password = ?";
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setString(1, textField_username.getText());
             statement.setString(2, textField_password.getText());
 
-            //We are going to execute the query
             ResultSet resultSet = statement.executeQuery();
 
-            //And we are going to check if there is any matching users
-            if (resultSet.next())
-            {
-                //Load the dashboard scene
-                Parent dashboardParent = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/com.miguelangelvinas.rotaapp/Dashboard.fxml")));
+            if (resultSet.next()) {
+                User loggedInUser = new User(
+                        resultSet.getInt("user_id"),
+                        resultSet.getString("email"),
+                        resultSet.getString("password"),
+                        resultSet.getString("name"),
+                        resultSet.getBoolean("isAdministrator")
+                );
+
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com.miguelangelvinas.rotaapp/Dashboard.fxml"));
+                Parent dashboardParent = loader.load();
+                DashboardController dashboardController = loader.getController();
+                dashboardController.initData(loggedInUser);
+
                 Scene dashboardScene = new Scene(dashboardParent);
                 Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-                stage.setTitle("Dashboard Page");
+                stage.setTitle("Dashboard");
                 stage.setScene(dashboardScene);
                 stage.show();
-            }
-            else
-            {
-                //The credentials are not valid, therefore there is no matching user!.
+            } else {
                 loginMessageLabel.setText("Your credentials are not valid. Please try again or contact your administrator.");
             }
 
-            //We are closing the resources as best practice.
-            resultSet.close();;
+            resultSet.close();
             statement.close();
             connection.close();
-        }
-        catch (SQLException | IOException e)
-        {
+        } catch (SQLException | IOException e) {
             e.printStackTrace();
             loginMessageLabel.setText("An error has occurred. Please try again.");
         }
     }
 
     @FXML
-    public void buttonCancelOnAction(ActionEvent event)
-    {
+    public void buttonCancelOnAction(ActionEvent event) {
         Stage stage = (Stage) button_cancel.getScene().getWindow();
         stage.close();
     }
 
     @FXML
-    public void buttonSignUpOnAction (ActionEvent event)
-    {
-        try
-        {
+    public void buttonSignUpOnAction(ActionEvent event) {
+        try {
             Parent signUpPageParent = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/com.miguelangelvinas.rotaapp/SignUpPage.fxml")));
             Scene signUpPageScene = new Scene(signUpPageParent);
             Stage stage = (Stage) button_signUp.getScene().getWindow();
             stage.setScene(signUpPageScene);
             stage.show();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
             // Handle the exception gracefully
         }
     }
-
 }

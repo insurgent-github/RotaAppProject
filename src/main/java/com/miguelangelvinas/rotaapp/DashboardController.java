@@ -1,5 +1,6 @@
 package com.miguelangelvinas.rotaapp;
 
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -13,6 +14,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -37,18 +39,21 @@ public class DashboardController implements Initializable {
     private Label monthYearLabel;
 
     private CalendarView calendarView;
-    private boolean isAdministrator; // This should be set based on user login
+    private User currentUser;
+    private UserDAO userDAO;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // TODO: Set isAdministrator based on user login
-        isAdministrator = true; // For testing purposes, set to true or false
+        userDAO = new UserDAO();
+    }
 
-        calendarView = new CalendarView(isAdministrator);
+    public void initData(User user) {
+        this.currentUser = user;
+        calendarView = new CalendarView(currentUser);
         calendarContainer.getChildren().add(calendarView.getView());
         updateMonthYearLabel();
 
-        if (isAdministrator) {
+        if (currentUser.isAdministrator()) {
             Button addEventButton = new Button("Add Event");
             addEventButton.setOnAction(e -> showAddEventDialog());
             calendarContainer.add(addEventButton, 0, 0);
@@ -60,7 +65,7 @@ public class DashboardController implements Initializable {
     }
 
     private void showAddEventDialog() {
-        Dialog<Event> dialog = new Dialog<>();
+        Dialog<RotaEvent> dialog = new Dialog<>();
         dialog.setTitle("Add Event");
         dialog.setHeaderText("Enter event details");
 
@@ -74,29 +79,40 @@ public class DashboardController implements Initializable {
 
         DatePicker datePicker = new DatePicker(LocalDate.now());
         TextField description = new TextField();
-        TextField assignedUser = new TextField();
+
+        List<User> users = userDAO.getAllUsers();
+        if (users.isEmpty()) {
+            System.out.println("No users found in the database.");
+            Alert alert = new Alert(Alert.AlertType.ERROR, "No users found in the database.", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
+        ComboBox<User> userComboBox = new ComboBox<>(FXCollections.observableArrayList(users));
+        userComboBox.setPromptText("Select a user");
 
         grid.add(new Label("Date:"), 0, 0);
         grid.add(datePicker, 1, 0);
         grid.add(new Label("Description:"), 0, 1);
         grid.add(description, 1, 1);
         grid.add(new Label("Assigned User:"), 0, 2);
-        grid.add(assignedUser, 1, 2);
+        grid.add(userComboBox, 1, 2);
 
         dialog.getDialogPane().setContent(grid);
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == addButton) {
-                return new Event(datePicker.getValue(), description.getText(), assignedUser.getText());
+                User selectedUser = userComboBox.getValue();
+                return new RotaEvent(datePicker.getValue(), description.getText(),
+                        selectedUser != null ? selectedUser.getName() : "");
             }
             return null;
         });
 
-        Optional<Event> result = dialog.showAndWait();
+        Optional<RotaEvent> result = dialog.showAndWait();
 
         result.ifPresent(event -> {
             calendarView.addEvent(event);
-            updateMonthYearLabel(); // Refresh the calendar view
+            updateMonthYearLabel();
         });
     }
 
@@ -151,7 +167,8 @@ public class DashboardController implements Initializable {
             stage.show();
         } catch (IOException e) {
             e.printStackTrace();
-            // Handle the exception gracefully
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error loading page: " + e.getMessage(), ButtonType.OK);
+            alert.showAndWait();
         }
     }
 }

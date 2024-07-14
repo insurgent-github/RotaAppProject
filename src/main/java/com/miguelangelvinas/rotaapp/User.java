@@ -1,17 +1,19 @@
 package com.miguelangelvinas.rotaapp;
 
+import java.util.Objects;
+
 public class User {
     private int id;
-    private String username;
-    private String password;  // In a real application, this should be hashed
     private String email;
+    private String password;
+    private String name;
     private boolean isAdministrator;
 
-    public User(int id, String username, String password, String email, boolean isAdministrator) {
+    public User(int id, String email, String password, String name, boolean isAdministrator) {
         this.id = id;
-        this.username = username;
-        this.password = password;
         this.email = email;
+        this.password = password;
+        this.name = name;
         this.isAdministrator = isAdministrator;
     }
 
@@ -20,16 +22,16 @@ public class User {
         return id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getEmail() {
+        return email;
     }
 
     public String getPassword() {
         return password;
     }
 
-    public String getEmail() {
-        return email;
+    public String getName() {
+        return name;
     }
 
     public boolean isAdministrator() {
@@ -37,8 +39,8 @@ public class User {
     }
 
     // Setters
-    public void setUsername(String username) {
-        this.username = username;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public void setPassword(String password) {
@@ -51,5 +53,30 @@ public class User {
 
     public void setAdministrator(boolean administrator) {
         isAdministrator = administrator;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return id == user.id &&
+                isAdministrator == user.isAdministrator &&
+                Objects.equals(name, user.name) &&
+                Objects.equals(email, user.email);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, email, isAdministrator);
+    }
+
+    public boolean checkPassword(String inputPassword) {
+        return this.password.equals(inputPassword);
     }
 }

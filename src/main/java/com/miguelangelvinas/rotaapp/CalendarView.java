@@ -1,51 +1,10 @@
 package com.miguelangelvinas.rotaapp;
 
-import java.time.DayOfWeek;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-
-import javafx.application.Application;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.css.PseudoClass;
-import javafx.geometry.HPos;
-import javafx.geometry.Insets;
-import javafx.scene.Node;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Region;
-import javafx.scene.text.TextAlignment;
-import javafx.stage.Stage;
-
-import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.StackPane;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -53,30 +12,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
-
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import com.miguelangelvinas.rotaapp.User;
+import com.miguelangelvinas.rotaapp.RotaEvent;  // Update this import
 
 public class CalendarView {
 
     private GridPane calendarGrid;
     private YearMonth currentYearMonth;
-    private List<Event> events;
+    private List<RotaEvent> events;  // Update this line
     private User currentUser;
-    private boolean isAdministrator;
 
     public CalendarView(User user) {
-        this.isAdministrator = isAdministrator;
         this.currentUser = user;
         currentYearMonth = YearMonth.now();
         calendarGrid = new GridPane();
@@ -100,7 +46,7 @@ public class CalendarView {
         updateCalendar();
     }
 
-    public void addEvent(Event event) {
+    public void addEvent(RotaEvent event) {  // Update this line
         if (currentUser.isAdministrator()) {
             events.add(event);
             updateCalendar();
@@ -123,30 +69,23 @@ public class CalendarView {
 
         for (int i = 1; i < 7; i++) {
             for (int j = 0; j < 7; j++) {
-                VBox dayBox = new VBox(5);
-                Rectangle background = new Rectangle(30, 30);
-                background.setFill(Color.LIGHTGRAY);
-                background.setStroke(Color.BLACK);
-
-                Text dayNumber = new Text(String.valueOf(date.getDayOfMonth()));
+                DayCell dayCell = new DayCell();
+                dayCell.setDate(date);
 
                 if (date.getMonthValue() == monthValue) {
-                    dayNumber.setFill(Color.BLACK);
+                    dayCell.setCurrentMonth(true);
                 } else {
-                    dayNumber.setFill(Color.GRAY);
+                    dayCell.setCurrentMonth(false);
                 }
 
-                dayBox.getChildren().addAll(background, dayNumber);
-
                 // Add events for this day
-                for (Event event : events) {
+                for (RotaEvent event : events) {  // Update this line
                     if (event.getDate().equals(date)) {
-                        Text eventText = new Text(event.getDescription());
-                        dayBox.getChildren().add(eventText);
+                        dayCell.addEvent(event);
                     }
                 }
 
-                calendarGrid.add(dayBox, j, i);
+                calendarGrid.add(dayCell, j, i);
 
                 date = date.plusDays(1);
             }
@@ -155,5 +94,47 @@ public class CalendarView {
 
     public String getCurrentMonthYear() {
         return currentYearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+    }
+
+    private class DayCell extends VBox {
+        private Label dateLabel;
+        private VBox eventsBox;
+
+        public DayCell() {
+            dateLabel = new Label();
+            eventsBox = new VBox(5);
+            getChildren().addAll(dateLabel, eventsBox);
+            setOnMouseClicked(e -> openDayViewPopup());
+        }
+
+        public void setDate(LocalDate date) {
+            dateLabel.setText(String.valueOf(date.getDayOfMonth()));
+        }
+
+        public void setCurrentMonth(boolean isCurrentMonth) {
+            if (isCurrentMonth) {
+                dateLabel.setTextFill(Color.BLACK);
+            } else {
+                dateLabel.setTextFill(Color.GRAY);
+            }
+        }
+
+        public void addEvent(RotaEvent event) {  // Update this line
+            if (eventsBox.getChildren().size() < 3) {
+                Label eventLabel = new Label(event.getShortSummary());
+                eventLabel.setStyle(event.getColorStyle());
+                eventsBox.getChildren().add(eventLabel);
+            } else if (eventsBox.getChildren().size() == 3) {
+                Label moreLabel = new Label("+1 more");
+                eventsBox.getChildren().add(moreLabel);
+            } else {
+                Label moreLabel = (Label) eventsBox.getChildren().get(3);
+                moreLabel.setText("+" + (eventsBox.getChildren().size() - 2) + " more");
+            }
+        }
+
+        private void openDayViewPopup() {
+            // Implement popup logic here
+        }
     }
 }
